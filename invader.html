@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Space Invaders - Matt
+    </title>
+    <style>
+      canvas{
+        padding: 0;
+        margin: auto;
+        display: block;
+        width: 800px;
+        height: 880px;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border: solid;
+      }
+    </style>
+  </head>
+<body>
+
+<canvas id="myCanvas">  
+</canvas>
+
+<script>
+  // screen setup
+
+  const canvas = document.getElementById("myCanvas");
+  canvas.width=800;
+  canvas.height=800;
+  const ctx = canvas.getContext("2d");
+
+  // score stuff
+
+  var score_value = 0;
+  const score_X = 20;
+  const score_Y = 20;
+  
+  // player stuff
+
+  var player_X = 400;
+  var player_Y = 700;
+  var player_X_velocity = 0;
+  var player_mode = 0;
+
+
+  // alien stuff
+
+  var alien_X = []; // list of alien X positions
+  var alien_Y = []; // list of alien Y positions
+  var alien_X_velocity = []; // list of alien velocity (x)
+  var alien_Y_velocity = []; // list of alien velocity (y)
+  var alien_type = []; // list of what each alien is 
+  var alien_list = 10; // how many aliens
+
+  // create all of the aliens
+
+  for (let index = 0; index < alien_list; index++) {
+    // make aliens worth 5 pts
+
+    special = Math.random();
+    if (special > 0.9){
+      alien_type.push(5)
+    }
+    else{
+      alien_type.push(1);
+    }
+
+    // make alien positions
+
+    alien_X.push(10 * Math.floor((Math.random() * 63) + 7));
+    random_Y = 50 * Math.floor((Math.random() *  4) + 1); // make the y pos and keep it for later use
+    alien_Y.push(random_Y);
+
+    // make alien velocity
+
+    if (random_Y % 100 == 0){
+      alien_X_velocity.push(1);
+    }
+    else{
+      alien_X_velocity.push(-1);
+    }
+    alien_Y_velocity.push(50);
+  }
+
+  // bullet stuff
+
+  var bullet_X = 0;
+  var bullet_Y = 0;
+  var bullet_X_velocity = 0;
+  var bullet_Y_velocity = 15;
+  var bullet_state = "rest";
+
+  // collision check
+
+  function isCollision(x1, x2, y1, y2){
+    distance = Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
+    if (distance <= 50){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+
+  // print out player
+
+  function player(x, y){
+    ctx.fillStyle = "blue";
+    ctx.fillRect(x-22.5,y-22.5,45,45);
+    ctx.fillStyle = "white";
+    ctx.fillRect(x-5+22.5,y-5+22.5,10,10);
+    ctx.fillRect(x-5-22.5,y-5+22.5,10,10);
+    ctx.fillRect(x-5,y-5-22.5,10,10);
+
+  }
+
+
+  // print out alien
+
+  function alien(x, y){
+    ctx.fillStyle = "red";
+    ctx.fillRect(x-22.5,y-22.5,45,45);
+    ctx.fillStyle = "black";
+    ctx.fillRect(x-5+12,y-10,10,10);
+    ctx.fillRect(x-5-12,y-10,10,10);
+    ctx.fillRect(x-12.5,y+5,25,10);
+
+  }
+
+  // print out bullet
+
+  function bullet(x, y){
+    ctx.fillStyle = "white";
+    ctx.fillRect(x-1,y-4,2,8);
+  }
+
+  // fix aliens
+
+  function fixAliens(){
+    for (let i = 0; i < alien_list; i++){
+      for (let j = 0; j < alien_list; j++){
+        if (alien_Y[j] == alien_Y[i] && Math.abs(alien_X[j] - alien_X[i]) <= 50 && alien_X[j] != alien_X[i]){
+          if (alien_X[j] + 50 < 800){
+              alien_X[j] += 50 * alien_X_velocity[j];
+              fixAliens();
+          }
+        } 
+        else{
+          continue;
+        } 
+    }
+    }
+  }
+
+  // evemt listen
+
+  var control = [false, false, false];
+
+  var counter = 0;
+  var run = true;
+
+  window.addEventListener('keydown', function(e){
+    if (e.key == 'a'){
+      control[0] = true;
+    }
+    if (e.key == 'd'){
+      control[1] = true;
+    }
+    if (e.key == ' '){
+      control[2] = true;
+    }
+  });
+  window.addEventListener('keyup', function(e){
+    if (e.key == 'a'){
+      control[0] = false;
+    }
+    if (e.key == 'd'){
+      control[1] = false;
+    }
+    if (e.key == ' '){
+      control[2] = false;
+    }
+  });
+
+  // main game loop
+
+  function annimate(){
+    // clear scn
+
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0,0,800,800);
+
+    // player controler
+
+    if (control[0]){
+      player_X_velocity = -5;
+    }
+    if (control[1]){
+      player_X_velocity = 5;
+    }
+    if (control[2]){
+      if (bullet_state == "rest"){
+        bullet_X = player_X;
+        bullet_Y = player_Y;
+        bullet(bullet_X, bullet_Y);
+        bullet_state = "fire"
+      }
+    }
+    player_X += player_X_velocity;
+    player_X_velocity = 0;
+    player_X %= 800;
+    if (player_X < 0){
+      player_X = 800;
+    }
+
+    // bullet movement
+    if (bullet_Y <= 0){
+      bullet_Y = 1000;
+      bullet_state = "rest";
+    }
+    if (bullet_state == "fire"){
+      bullet(bullet_X, bullet_Y);
+      bullet_Y -= bullet_Y_velocity;
+    }
+
+    // alien movement
+    for (let i = 0; i < alien_list; i++){
+      alien_X[i] += alien_X_velocity[i] * (1 + counter/800);
+      
+      
+      // game over
+
+      if (alien_Y[i] >= 700){
+        if (Math.abs(player_X - alien_X[i] < 50)){
+          for (let j = 0; j < alien_list; j++){
+            alien_X[j] = 1000;
+          }
+          ctx.font = '100px Courier';
+          ctx.fillStyle = 'white';
+          ctx.fillText("GAME OVER", 145, 400);
+          run = false;
+        }
+      }
+
+      // move
+
+      if ((alien_X[i] >= 755 && alien_X_velocity[i] > 0) || (alien_X[i] <= 45 && alien_X_velocity[i] < 0)){
+        alien_X_velocity[i] *= -1;
+        alien_Y[i] += alien_Y_velocity[i];
+      }
+
+      // collision
+      var collision = isCollision(bullet_X, alien_X[i], bullet_Y, alien_Y[i]);
+      if (collision){
+        score_value += 1 * alien_type[i];
+        bullet_Y = 1000;
+        bullet_state = "rest";
+        alien_X[i] = (10 * Math.floor((Math.random() * 63) + 7));
+        let random_Y = 50 * Math.floor((Math.random() *  4) + 1);
+        alien_Y[i] = random_Y;
+        if (random_Y % 100 == 0){
+          alien_X_velocity[i] =  1;
+        }
+        else{
+          alien_X_velocity[i] = -1;
+        }
+      }
+    }
+
+    // fix aliens
+
+    fixAliens();
+
+    // print out the player and aliens and bullet
+
+    player(player_X, player_Y);
+    for(let i = 0; i < alien_list; i++){
+      alien(alien_X[i], alien_Y[i]);
+    }
+    bullet(bullet_X, bullet_Y);
+    ctx.font = '20px Courier';
+    ctx.fillStyle = 'white';
+    ctx.fillText("Score: " + score_value, score_X, score_Y);
+    counter++;
+    if (run){
+      window.requestAnimationFrame(annimate);
+    }
+  }
+  window.requestAnimationFrame(annimate);
+
+</script>
+
+</body>
+</html> 
